@@ -1,4 +1,4 @@
-"""Pre-enfasis y ventaneo Hanning."""
+"""Pre-enfasis y ventaneo Hamming."""
 from __future__ import annotations
 
 import numpy as np
@@ -21,7 +21,7 @@ def frame_signal(
     frame_size: int = FRAME_SIZE,
     frame_shift: int = FRAME_SHIFT,
 ) -> np.ndarray:
-    """Parte la senal en bloques solapados y aplica ventana Hanning.
+    """Parte la senal en bloques solapados y aplica ventana Hamming.
 
     Devuelve matriz de (n_frames, frame_size).
     """
@@ -38,7 +38,7 @@ def frame_signal(
         + frame_shift * np.arange(n_frames)[:, None]
     )
     frames = signal[idx].astype(np.float64)
-    window = np.hanning(frame_size)
+    window = np.hamming(frame_size)
     return frames * window[None, :]
 
 

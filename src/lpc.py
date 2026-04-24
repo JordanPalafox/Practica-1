@@ -70,24 +70,32 @@ def lpc_to_lsf(a: np.ndarray) -> np.ndarray:
 
 
 def lsf_to_lpc(lsf: np.ndarray) -> np.ndarray:
-    """LSF a coeficientes LPC (a[0] = 1)."""
-    p = lsf.size
-    lsf_sorted = np.sort(lsf)
-    p_roots = np.exp(1j * lsf_sorted[0::2])
-    q_roots = np.exp(1j * lsf_sorted[1::2])
-    p_roots = np.concatenate([p_roots, np.conj(p_roots)])
-    q_roots = np.concatenate([q_roots, np.conj(q_roots)])
+    """LSF a coeficientes LPC (a[0] = 1). Orden par.
 
-    P = np.poly(p_roots).real
-    Q = np.poly(q_roots).real
-    if p % 2 == 0:
-        P = np.convolve(P, [1.0, -1.0])
-        Q = np.convolve(Q, [1.0, 1.0])
-    else:
-        Q = np.convolve(Q, [1.0, -1.0, 0.0])[: P.size + 1] if False else Q
-    A = 0.5 * (P[: p + 1] + Q[: p + 1])
-    A = A / A[0]
-    return A
+    Descomposicion:
+        P(z) = A(z) + z^-(p+1) A(z^-1)  -> raiz en z=-1, factor (1 + z^-1)
+        Q(z) = A(z) - z^-(p+1) A(z^-1)  -> raiz en z=+1, factor (1 - z^-1)
+    Los LSF ordenados se intercalan como P, Q, P, Q, ...
+    A(z) = (P(z) + Q(z)) / 2; la ultima entrada es 0 por construccion.
+    """
+    p = lsf.size
+    if p % 2 != 0:
+        raise ValueError("Solo se soporta orden LPC par.")
+    lsf_sorted = np.sort(lsf)
+
+    p_angles = lsf_sorted[0::2]
+    q_angles = lsf_sorted[1::2]
+
+    P = np.array([1.0, 1.0])
+    for theta in p_angles:
+        P = np.convolve(P, [1.0, -2.0 * np.cos(theta), 1.0])
+
+    Q = np.array([1.0, -1.0])
+    for theta in q_angles:
+        Q = np.convolve(Q, [1.0, -2.0 * np.cos(theta), 1.0])
+
+    A = 0.5 * (P + Q)
+    return A[: p + 1]
 
 
 def extract_lsf_matrix(

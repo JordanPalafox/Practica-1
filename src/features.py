@@ -19,11 +19,9 @@ def load_wav(path: Path) -> np.ndarray:
     return signal.astype(np.float64)
 
 
-def extract_features(
-    path: Path, order: int = LPC_ORDER
+def signal_to_features(
+    signal: np.ndarray, order: int = LPC_ORDER
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Devuelve (lsf_frames, lpc_frames, autocorr_frames) para un wav."""
-    signal = load_wav(path)
     pre = preemphasis(signal)
     pre = trim_signal(pre)
     frames = frame_signal(pre)
@@ -35,3 +33,11 @@ def extract_features(
         r_mat[i] = autocorrelation(frames[i], order)
 
     return lsf_mat, lpc_mat, r_mat
+
+
+def extract_features(
+    path: Path, order: int = LPC_ORDER
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Devuelve (lsf_frames, lpc_frames, autocorr_frames) para un wav."""
+    signal = load_wav(path)
+    return signal_to_features(signal, order)

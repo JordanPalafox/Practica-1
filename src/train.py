@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from src.augment import augment_signal
 from src.config import (
     CODEBOOK_SIZES,
     CODEBOOKS_DIR,
@@ -17,7 +18,7 @@ from src.config import (
     TRAIN_PER_WORD,
     WORDS,
 )
-from src.features import extract_features
+from src.features import load_wav, signal_to_features
 from src.lpc import lsf_to_lpc
 from src.vq import lbg, quantization_distortion
 
@@ -32,13 +33,19 @@ def list_training_files(word: str) -> list[Path]:
 
 
 def collect_lsf(files: list[Path]) -> np.ndarray:
+    """Extrae LSF de cada archivo y tambien de variantes aumentadas."""
     chunks: list[np.ndarray] = []
+    n_variants = 0
     for f in files:
-        lsf, _, _ = extract_features(f)
-        if lsf.shape[0]:
-            chunks.append(lsf)
+        signal = load_wav(f)
+        for variant in augment_signal(signal):
+            lsf, _, _ = signal_to_features(variant)
+            if lsf.shape[0]:
+                chunks.append(lsf)
+                n_variants += 1
     if not chunks:
         raise RuntimeError("No se extrajeron frames validos.")
+    print(f"   variantes usadas: {n_variants} (de {len(files)} archivos originales)")
     return np.vstack(chunks)
 
 
